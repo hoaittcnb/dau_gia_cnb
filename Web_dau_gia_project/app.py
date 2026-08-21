@@ -35,13 +35,16 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
-app = Flask(__name__)
-app.secret_key = 'doi-thanh-secret-key-cnb-2025'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'instance', 'daugia.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(os.path.join(BASE_DIR, 'instance'), exist_ok=True)
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+DATA_DIR = os.getenv('DATA_DIR', BASE_DIR)          # Render: /var/data                                                                        
+UPLOAD_FOLDER = os.path.join(DATA_DIR, 'uploads')                                                                                              
+                                                                                                                                                 
+app = Flask(__name__)                                                                                                                          
+app.secret_key = os.getenv('SECRET_KEY', 'doi-thanh-secret-key-cnb-2025')                                                                      
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(DATA_DIR, 'daugia.db')                                                     
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False                                                                                           
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER                                                                                                    
+os.makedirs(UPLOAD_FOLDER, exist_ok=True) 
+
 
 db = SQLAlchemy(app)
 mail = Mail(app)
@@ -843,9 +846,15 @@ def init_db():
             db.session.commit()
             print('>> Default admin created: admin / admin123')
 
-
-if __name__ == '__main__':
-    init_db()
-    socketio.start_background_task(presence_reaper)   # tự động offline khi đóng trình duyệt
-    socketio.run(app, debug=True, host='0.0.0.0', port=8052,
-                 allow_unsafe_werkzeug=True)
+  def bootstrap():                                                                                                                               
+      init_db()                                                                                                                                  
+      socketio.start_background_task(presence_reaper)                                                                                            
+                                                                                                                                                 
+                                                                                                                                                 
+  if __name__ == '__main__':                                                                                                                     
+      bootstrap()                                                                                                                                
+      socketio.run(app, debug=True, host='0.0.0.0',                                                                                              
+                   port=int(os.getenv('PORT', 8052)),                                                                                            
+                   allow_unsafe_werkzeug=True)                                                                                                   
+  else:                                                                                                                                          
+      bootstrap()          # khi chạy bằng gunicorn trên Render     

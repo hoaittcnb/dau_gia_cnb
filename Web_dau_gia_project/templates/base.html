@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Đấu giá từ thiện - VNG Give Away{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a href="{{ url_for('home') }}">💛 Đấu giá từ thiện - VNG Give Away</a>
+    </div>
+    <button class="nav-toggle" id="navToggle" aria-label="Mở menu" aria-expanded="false"
+            onclick="var n=document.getElementById('mainNav');var o=n.classList.toggle('open');this.setAttribute('aria-expanded',o)">☰</button>
+    <nav id="mainNav">
+      <a href="{{ url_for('home') }}">Giới thiệu</a>
+      <a href="{{ url_for('activities') }}">Hoạt động của hội</a>
+      {% if session.get('user_id') %}
+        {% if cur_user and cur_user.is_admin %}
+        <a href="{{ url_for('admin') }}">Quản lý</a>
+        {% endif %}
+        <a href="{{ url_for('auction') }}">Đấu giá</a>
+        <a href="{{ url_for('donate') }}">Quyên góp</a>
+        <a href="{{ url_for('change_password') }}">Đổi mật khẩu</a>
+        <a href="{{ url_for('logout') }}" class="btn-logout">Thoát</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Đăng nhập</a>
+        <a href="{{ url_for('register') }}">Đăng ký</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashes">
+          {% for category, msg in messages %}
+            <div class="flash flash-{{ category }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">Đấu giá từ thiện - VNG Give Away · Không vì lợi ích cá nhân hay tổ chức nào.</footer>
+
+  {% if cur_user %}
+  <!-- Kết nối socket + heartbeat chung cho MỌI trang (giữ trạng thái online, tự offline khi đóng trình duyệt) -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const ME = "{{ cur_user.username }}";
+    window.socket = io();
+    function heartbeat(){ if (window.socket && window.socket.connected) window.socket.emit('heartbeat'); }
+    window.socket.on('connect', heartbeat);
+    setInterval(heartbeat, 15000);   // gửi tín hiệu mỗi 15 giây
+  </script>
+  {% endif %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

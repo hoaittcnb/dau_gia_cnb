@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Giới thiệu · Đấu giá từ thiện{% endblock %}
+{% block content %}
+<div class="card intro">
+  <h1>Xin Chào Bạn Đến Với Chương Trình Đấu giá từ thiện - VNG Give Away!</h1>
+  <p>Chương trình này được lập nên nhằm mục đích gây quỹ từ thiện của team C&amp;B,
+     không vì lợi ích của bất kỳ cá nhân hay tổ chức nào.</p>
+
+  <h2>🎯 Mục tiêu</h2>
+  <p>Nhằm để tạo thêm ý nghĩa cho việc team building của team và giúp đỡ bớt
+     những khó khăn của cuộc sống khó khăn xung quanh ta.</p>
+
+  <h2>🤝 Hoạt động</h2>
+  <ul>
+    <li><b>Gây quỹ:</b> mỗi thành viên của team có những vật dụng bất kỳ cần quyên góp
+        cho team để đấu giá nhằm gây quỹ cho team, hoặc có thể vận động từ thành viên khác ngoài team.</li>
+    <li>Hàng năm hoạt động này sẽ được thực hiện 1 hoặc nhiều lần tùy theo tình hình
+        của quỹ và biểu quyết của team.</li>
+    <li>Mỗi thành viên có thể đề xuất nơi mình sẽ tham gia từ thiện và nơi được chọn thông qua biểu quyết.</li>
+  </ul>
+
+  <h2>⚖️ Nguyên tắc Đấu giá</h2>
+  <ul>
+    <li>Khi ban tổ chức nhận được vật phẩm của thành viên quyên góp sẽ thông báo cho tất cả
+        các thành viên ngày đấu giá, giá khởi điểm không vượt quá 1/2 giá trị của vật phẩm
+        đang bán trên thị trường.</li>
+    <li>Nguyên tắc đấu giá cho vật phẩm - Bước giá mỗi lần tương ứng như sau:
+      <ul>
+        <li>Giá khởi điểm dưới 100.000: bước giá <b>20.000</b></li>
+        <li>Giá khởi điểm từ 100.000 - dưới 1.000.000: bước giá <b>30.000</b></li>
+        <li>Giá khởi điểm từ 1.000.000 trở lên: bước giá <b>100.000</b></li>
+      </ul>
+    </li>
+    <li>Ban tổ chức sẽ ra thời gian cho mỗi phiên đấu giá. Sau thời gian trên thì người ra
+        giá cao nhất sẽ mua được vật phẩm đó.</li>
+    <li>Người trả giá cao nhất sẽ nhận được vật phẩm và thanh toán cho ban tổ chức trong vòng
+        3 ngày. Nếu người đấu giá không nhận thì phải trả phí cho ban tổ chức 100.000 VND.</li>
+  </ul>
+
+  <p>Hi vọng nhận được sự ủng hộ và đóng góp tận tình của mọi người.</p>
+  <p class="muted"><i>Đại Diện Ban Tổ Chức — Xin chân thành cám ơn!</i></p>
+
+  <div class="cta">
+    <a class="btn" href="{{ url_for('login') }}">Đăng nhập</a>
+    <a class="btn btn-accent" href="{{ url_for('register') }}">Đăng ký mới</a>
+    <a class="btn btn-outline" href="{{ url_for('activities') }}">📸 Hoạt động của hội</a>
+  </div>
+</div>
+{% endblock %}

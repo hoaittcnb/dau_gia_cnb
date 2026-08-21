@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}Màn hình đấu giá{% endblock %}
+{% block content %}
+<div class="auction-head">
+  <div class="hello">Xin chào, {{ user.fullname or user.username }} 👋</div>
+  <div class="countdown" id="countdown" data-end="{{ auction_end }}">
+    <small>Thời gian còn lại</small>
+    <span id="cd-text">--:--:--</span>
+  </div>
+</div>
+
+<div class="online-bar">
+  <span class="online-label">🟢 Đang online (<span id="online-count">0</span>):</span>
+  <span id="online-list" class="online-list"></span>
+</div>
+
+{% if not items %}
+  <div class="card center muted">Hiện chưa có sản phẩm nào được đăng đấu giá. Vui lòng quay lại sau.</div>
+{% endif %}
+
+<div class="grid">
+  {% for it in items %}
+  {% set p = it.p %}
+  <div class="product" data-pid="{{ p.id }}" data-step="{{ it.step }}">
+    <div class="thumb">
+      {% if p.image %}
+        <img src="{{ url_for('static', filename='uploads/' ~ p.image) }}" alt="{{ p.name }}">
+      {% else %}
+        <span class="muted">Không có hình</span>
+      {% endif %}
+      <div class="popup">
+        <b>{{ p.name }}</b>
+        <span>{{ p.description or 'Không có mô tả' }}</span>
+        <span>Giá khởi điểm: {{ '{:,.0f}'.format(p.start_price) }} VND</span>
+        <span>Người quyên góp: {{ p.donor }}</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="pname">
+        {% if p.ext_link %}
+          <a href="{{ p.ext_link }}" target="_blank" rel="noopener">{{ p.name }} ↗</a>
+        {% else %}{{ p.name }}{% endif %}
+      </div>
+      <div class="price-row"><span>Giá khởi điểm</span>
+        <span>{{ '{:,.0f}'.format(p.start_price) }}</span></div>
+      <div class="price-row"><span>Giá hiện tại</span>
+        <span class="price-cur" id="cur-{{ p.id }}">{{ '{:,.0f}'.format(it.current) }}</span></div>
+      <div class="price-row"><span>Người đấu giá cao nhất</span>
+        <span id="bidder-{{ p.id }}" class="bidder-name{{ ' has-bidder' if it.top_bidder }}">{{ it.top_bidder or '—' }}</span></div>
+      <div class="muted" style="font-size:.8rem">Bước giá: {{ '{:,.0f}'.format(it.step) }} VND ·
+        tối thiểu kế tiếp: <b id="min-{{ p.id }}">{{ '{:,.0f}'.format(it.min_next) }}</b></div>
+      <div class="bidbox">
+        <input type="number" id="amt-{{ p.id }}" placeholder="Nhập giá đấu" value="{{ it.min_next }}" step="{{ it.step }}">
+        <button class="btn" onclick="placeBid({{ p.id }})">Đấu giá</button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Chat -->
+<button class="chat-fab" id="chatFab" onclick="toggleChat()">💬
+  <span class="chat-badge" id="chatBadge" style="display:none">0</span>
+</button>
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-head">Group Chat <button onclick="toggleChat()">✕</button></div>
+  <div class="chat-msgs" id="chatMsgs"></div>
+  <div class="chat-input">
+    <input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg()">
+    <button class="btn" onclick="sendMsg()">Send</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// socket + ME đã được khởi tạo sẵn trong base.html
+const fmt = n => Number(n).toLocaleString('vi-VN');
+
+// ---- Countdown ----
+const cdEl = document.getElementById('countdown');
+const endStr = cdEl.dataset.end;
+function tick(){
+  const txt = document.getElementById('cd-text');
+  if(!endStr){ txt.textContent = 'Admin chưa đặt thời gian'; return; }
+  const diff = new Date(endStr) - new Date();
+  if(diff <= 0){ txt.textContent = 'ĐÃ KẾT THÚC'; return; }
+  const d = Math.floor(diff/86400000);
+  const h = Math.floor(diff%86400000/3600000);
+  const m = Math.floor(diff%3600000/60000);
+  const s = Math.floor(diff%60000/1000);
+  txt.textContent = (d>0? d+'d ':'') + String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+tick(); setInterval(tick, 1000);
+
+// ---- Socket.IO (dùng chung socket từ base.html) ----
+const socket = window.socket;
+
+// Danh sách user đang online (cập nhật realtime khi có người vào/thoát)
+socket.on('user_list', users => {
+  const list = document.getElementById('online-list');
+  const cnt = document.getElementById('online-count');
+  cnt.textContent = users.length;
+  list.innerHTML = users.map(u =>
+    '<span class="online-user'+(u===ME?' me':'')+'">'+
+    u.replace(/</g,'&lt;')+(u===ME?' (bạn)':'')+'</span>').join('');
+});
+
+socket.on('bid_update', d => {
+  const cur = document.getElementById('cur-'+d.product_id);
+  if(cur){
+    cur.textContent = fmt(d.current);
+    const bd = document.getElementById('bidder-'+d.product_id);
+    bd.textContent = d.bidder;
+    bd.classList.add('has-bidder');   // có người đấu giá => highlight tên
+    document.getElementById('min-'+d.product_id).textContent = fmt(d.min_next);
+    const amt = document.getElementById('amt-'+d.product_id);
+    amt.value = d.min_next; amt.min = d.min_next;
+  }
+});
+
+// ---- Đặt giá ----
+async function placeBid(pid){
+  const amt = document.getElementById('amt-'+pid).value;
+  const fd = new FormData();
+  fd.append('product_id', pid); fd.append('amount', amt);
+  const r = await fetch('{{ url_for("bid") }}', {method:'POST', body:fd});
+  const data = await r.json();
+  if(!data.ok){ alert(data.msg); }
+}
+
+// ---- Chat ----
+let unread = 0;
+function isChatOpen(){ return document.getElementById('chatPanel').classList.contains('open'); }
+function updateBadge(){
+  const b = document.getElementById('chatBadge');
+  const f = document.getElementById('chatFab');
+  if(unread > 0){
+    b.textContent = unread > 99 ? '99+' : unread;
+    b.style.display = 'flex';
+    f.classList.add('has-new');      // nút rung + đỏ để gây chú ý
+  } else {
+    b.style.display = 'none';
+    f.classList.remove('has-new');
+  }
+}
+function toggleChat(){
+  const p = document.getElementById('chatPanel');
+  const f = document.getElementById('chatFab');
+  p.classList.toggle('open');
+  f.style.display = p.classList.contains('open') ? 'none' : 'flex';
+  if(p.classList.contains('open')){          // mở lên => đã đọc hết
+    unread = 0; updateBadge();
+    document.getElementById('chatInput').focus();
+  }
+}
+function sendMsg(){
+  const inp = document.getElementById('chatInput');
+  if(inp.value.trim()){ socket.emit('send_message', {message: inp.value.trim()}); inp.value=''; }
+}
+socket.on('receive_message', d => {
+  const box = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.className = 'chat-msg' + (d.user===ME ? ' me':'');
+  div.innerHTML = '<span class="who">'+d.user+' · '+d.time+'</span>'+
+                  d.message.replace(/</g,'&lt;');
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
+  // Nếu panel đang đóng và tin đến từ người khác => báo đỏ
+  if(!isChatOpen() && d.user!==ME){
+    unread++; updateBadge();
+  }
+});
+</script>
+{% endblock %}

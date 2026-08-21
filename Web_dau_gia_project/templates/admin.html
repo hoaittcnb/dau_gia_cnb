@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Quản lý - Admin{% endblock %}
+{% block content %}
+<h1>Trang quản lý của Admin</h1>
+<div class="tabs">
+  <a href="#products">Thông tin sản phẩm</a>
+  <a href="#bids">Thông tin đấu giá</a>
+  <a href="#users">Thông tin user</a>
+  <a href="#add-product">Nhập sản phẩm</a>
+  <a href="#settime">Set thời gian</a>
+  <a href="#mail">Email server</a>
+  <a href="#contact">Người liên hệ</a>
+  <a href="#activities">Hoạt động của hội</a>
+</div>
+
+<!-- ================= SẢN PHẨM ================= -->
+<div class="card section" id="products">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <h2 style="margin:0">Thông tin sản phẩm</h2>
+    <a class="btn btn-accent btn-sm" href="{{ url_for('admin_export_winners') }}">⬇ Xuất danh sách người chiến thắng</a>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <tr>
+      <th>Số thứ tự</th><th>Tên sản phẩm</th><th>Người quyên góp</th>
+      <th>Giá khởi điểm</th><th>Giá chốt đấu giá</th><th>Người chốt giá</th>
+      <th>Status</th><th>Ngày quyên góp</th><th>Thao tác</th>
+    </tr>
+    {% for row in prod_view %}
+    {% set p = row.p %}
+    <tr>
+      <td>{{ p.stt }}</td>
+      <td>{{ p.name }}</td>
+      <td>{{ p.donor }}</td>
+      <td>{{ '{:,.0f}'.format(p.start_price) }}</td>
+      <td>{{ '{:,.0f}'.format(p.final_price) if p.final_price else '—' }}</td>
+      <td>{{ p.winner or '—' }}</td>
+      <td>
+        {% if p.status=='dang' %}<span class="tag tag-dang">Đăng</span>
+        {% elif p.status=='done' %}<span class="tag tag-done">Done</span>
+        {% else %}<span class="tag tag-dong">Đóng</span>{% endif %}
+      </td>
+      <td>{{ p.donate_date.strftime('%d/%m/%Y') }}</td>
+      <td>
+        {% if p.status != 'done' %}
+        <form method="post" action="{{ url_for('admin_product_status') }}" style="display:flex;gap:5px">
+          <input type="hidden" name="product_id" value="{{ p.id }}">
+          <select name="status">
+            <option value="dang" {{ 'selected' if p.status=='dang' }}>Đăng</option>
+            <option value="dong" {{ 'selected' if p.status=='dong' }}>Đóng</option>
+          </select>
+          <button class="btn btn-sm" type="submit">Lưu</button>
+        </form>
+        {% else %}<span class="muted">Đã khóa</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="muted" style="font-size:.82rem;margin-top:10px">
+    <b>Status:</b> Đăng = show lên đấu giá · Đóng = không đăng (có thể đổi lại) ·
+    Done = đã đấu giá xong, không đổi được nữa.</p>
+</div>
+
+<!-- ================= ĐẤU GIÁ ================= -->
+<div class="card section" id="bids">
+  <h2>Thông tin đấu giá</h2>
+  {% if bid_view %}
+  <div class="table-wrap">
+  <table>
+    <tr><th>Số thứ tự</th><th>Tên sản phẩm</th><th>Giá đấu</th><th>Người đấu giá</th><th>Loại</th></tr>
+    {% for row in bid_view %}
+    <tr>
+      <td>{{ row.stt }}</td>
+      <td>{{ row.pname }}</td>
+      <td>{{ '{:,.0f}'.format(row.b.amount) }}</td>
+      <td>{{ row.b.bidder }}</td>
+      <td>Đấu giá</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}<p class="muted">Chưa có lượt đấu giá nào.</p>{% endif %}
+</div>
+
+<!-- ================= USER ================= -->
+<div class="card section" id="users">
+  <h2>Thông tin user</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>ID</th><th>Tên đăng nhập</th><th>Email</th><th>Họ tên</th><th>Quyền</th><th>Thao tác</th></tr>
+    {% for us in users %}
+    <tr>
+      <td>{{ us.id }}</td><td>{{ us.username }}</td><td>{{ us.email }}</td>
+      <td>{{ us.fullname }}</td>
+      <td>{{ 'Admin' if us.is_admin else 'User' }}</td>
+      <td>
+        {% if us.id != user.id %}
+        <form method="post" action="{{ url_for('admin_user_delete') }}"
+              onsubmit="return confirm('Xóa user {{ us.username }}?')">
+          <input type="hidden" name="user_id" value="{{ us.id }}">
+          <button class="btn btn-sm btn-danger" type="submit">Xóa</button>
+        </form>
+        {% else %}<span class="muted">(bạn)</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  <h3 style="margin-top:22px">Thêm user mới</h3>
+  <form method="post" action="{{ url_for('admin_user_add') }}" class="form-grid">
+    <div><label>Tên đăng nhập</label><input name="username" required></div>
+    <div><label>Email</label><input type="email" name="email" required></div>
+    <div><label>Họ tên</label><input name="fullname" required></div>
+    <div><label>Mật khẩu</label><input type="password" name="password" required></div>
+    <div class="checkbox-row full"><input type="checkbox" name="is_admin" id="ia"><label for="ia" style="margin:0">Là Admin</label></div>
+    <div class="full"><button class="btn" type="submit">Thêm user</button></div>
+  </form>
+</div>
+
+<!-- ================= NHẬP SẢN PHẨM ================= -->
+<div class="card section" id="add-product">
+  <h2>Nhập sản phẩm</h2>
+  <form method="post" action="{{ url_for('admin_product_add') }}" enctype="multipart/form-data" class="form-grid">
+    <div class="full"><label>Tên sản phẩm</label><input name="name" required></div>
+    <div class="full"><label>Mô tả (tối đa 30 chữ)</label><textarea name="description" rows="2"></textarea></div>
+    <div><label>Link tham khảo</label><input type="url" name="ext_link"></div>
+    <div><label>Giá khởi điểm (VND)</label><input type="number" name="start_price" min="0" required></div>
+    <div>
+      <label>Người quyên góp</label>
+      <input list="userlist" name="donor" placeholder="Chọn hoặc nhập username">
+      <datalist id="userlist">
+        {% for us in all_users %}<option value="{{ us.username }}">{% endfor %}
+      </datalist>
+    </div>
+    <div><label>Hình sản phẩm</label><input type="file" name="image" accept="image/*"></div>
+    <div class="full"><button class="btn" type="submit">Thêm sản phẩm</button></div>
+  </form>
+</div>
+
+<!-- ================= SET THỜI GIAN ================= -->
+<div class="card section" id="settime">
+  <h2>Set thời gian đấu giá</h2>
+  <form method="post" action="{{ url_for('admin_settime') }}" class="form-grid">
+    <div><label>Thời gian bắt đầu</label><input type="datetime-local" name="auction_start" value="{{ settings.auction_start }}"></div>
+    <div><label>Thời gian kết thúc</label><input type="datetime-local" name="auction_end" value="{{ settings.auction_end }}"></div>
+    <div class="full"><button class="btn" type="submit">Lưu thời gian</button></div>
+  </form>
+  <p class="muted" style="font-size:.82rem">Khi hết giờ, hệ thống tự chốt giá cao nhất, chuyển status Done và gửi email cho người thắng.</p>
+</div>
+
+<!-- ================= EMAIL SERVER ================= -->
+<div class="card section" id="mail">
+  <h2>Cấu hình email gửi đi</h2>
+  <form method="post" action="{{ url_for('admin_mail') }}" class="form-grid">
+    <div><label>Mail server</label><input name="mail_server" value="{{ settings.mail_server }}"></div>
+    <div><label>Mail port</label><input name="mail_port" value="{{ settings.mail_port }}"></div>
+    <div><label>Mail username</label><input name="mail_username" value="{{ settings.mail_username }}"></div>
+    <div><label>Mail password</label><input type="password" name="mail_password" value="{{ settings.mail_password }}"></div>
+    <div class="checkbox-row"><input type="checkbox" name="mail_use_tls" id="tls" {{ 'checked' if settings.mail_use_tls=='true' }}><label for="tls" style="margin:0">Use TLS</label></div>
+    <div class="checkbox-row"><input type="checkbox" name="mail_use_ssl" id="ssl" {{ 'checked' if settings.mail_use_ssl=='true' }}><label for="ssl" style="margin:0">Use SSL</label></div>
+    <div class="full"><button class="btn" type="submit">Lưu cấu hình mail</button></div>
+  </form>
+</div>
+
+<!-- ================= NGƯỜI LIÊN HỆ ================= -->
+<div class="card section" id="contact">
+  <h2>Thông tin người liên hệ nhận hàng</h2>
+  <form method="post" action="{{ url_for('admin_contact') }}" class="form-grid">
+    <div><label>Họ tên</label><input name="contact_name" value="{{ settings.contact_name }}"></div>
+    <div><label>Số điện thoại</label><input name="contact_phone" value="{{ settings.contact_phone }}"></div>
+    <div class="full"><button class="btn" type="submit">Lưu thông tin liên hệ</button></div>
+  </form>
+</div>
+
+<!-- ================= HOẠT ĐỘNG CỦA HỘI ================= -->
+<div class="card section" id="activities">
+  <h2>Trang Hoạt động của hội</h2>
+  <p class="muted">Tải lên file Word (.docx) — toàn bộ nội dung (chữ, tiêu đề, hình ảnh) sẽ tự
+     hiển thị lên trang <a href="{{ url_for('activities') }}" target="_blank">Hoạt động của hội</a>
+     (trang này công khai, không cần đăng nhập).</p>
+  {% if settings.activities_updated %}
+    <p class="muted">Nội dung hiện tại cập nhật lúc: <b>{{ settings.activities_updated }}</b></p>
+  {% endif %}
+  <form method="post" action="{{ url_for('admin_activities') }}" enctype="multipart/form-data">
+    <label>Chọn file Word (.docx)</label>
+    <input type="file" name="docfile" accept=".docx" required>
+    <button class="btn" type="submit" style="margin-top:12px">Tải lên & cập nhật</button>
+  </form>
+</div>
+{% endblock %}

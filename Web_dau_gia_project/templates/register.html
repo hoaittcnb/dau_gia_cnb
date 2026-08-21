@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Đăng ký · Đấu giá từ thiện{% endblock %}
+{% block content %}
+<div class="card auth-wrap">
+  <h1>Đăng ký tài khoản</h1>
+  <form method="post">
+    <label>Tên đăng nhập</label>
+    <input type="text" name="username" required>
+    <label>Email</label>
+    <input type="email" name="email" required>
+    <label>Họ và tên</label>
+    <input type="text" name="fullname" required>
+    <label>Mật mã</label>
+    <input type="password" name="password" required>
+    <button class="btn btn-block" type="submit">Đăng ký</button>
+  </form>
+  <div class="links">
+    Đã có tài khoản? <a href="{{ url_for('login') }}">Trở về trang đăng nhập</a>
+  </div>
+</div>
+{% endblock %}

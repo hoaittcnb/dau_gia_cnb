@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Quyên góp sản phẩm{% endblock %}
+{% block content %}
+<div class="card section">
+  <h2>Quyên góp sản phẩm</h2>
+  <p class="muted">Mỗi user có thể nhập nhiều sản phẩm. Lưu ý: sau khi gửi (summit) sẽ <b>không chỉnh sửa được</b>.</p>
+  <form method="post" enctype="multipart/form-data" class="form-grid">
+    <div class="full">
+      <label>Tên sản phẩm</label>
+      <input type="text" name="name" required>
+    </div>
+    <div class="full">
+      <label>Mô tả sản phẩm (ngắn gọn, tối đa 30 chữ)</label>
+      <textarea name="description" rows="2"></textarea>
+    </div>
+    <div>
+      <label>Link sản phẩm ở trang khác (tham khảo)</label>
+      <input type="url" name="ext_link" placeholder="https://...">
+    </div>
+    <div>
+      <label>Giá khởi điểm (VND)</label>
+      <input type="number" name="start_price" min="0" required>
+    </div>
+    <div class="full">
+      <label>Hình sản phẩm</label>
+      <input type="file" name="image" accept="image/*">
+    </div>
+    <div class="full">
+      <button class="btn" type="submit">Gửi quyên góp</button>
+    </div>
+  </form>
+</div>
+
+<div class="card section">
+  <h2>Sản phẩm bạn đã quyên góp</h2>
+  {% if my_products %}
+  <table>
+    <tr><th>STT</th><th>Tên</th><th>Mô tả</th><th>Giá khởi điểm</th><th>Trạng thái</th><th>Ngày</th></tr>
+    {% for p in my_products %}
+    <tr>
+      <td>{{ p.stt }}</td>
+      <td>{{ p.name }}</td>
+      <td>{{ p.description }}</td>
+      <td>{{ '{:,.0f}'.format(p.start_price) }}</td>
+      <td>
+        {% if p.status=='dang' %}<span class="tag tag-dang">Đăng</span>
+        {% elif p.status=='done' %}<span class="tag tag-done">Done</span>
+        {% else %}<span class="tag tag-dong">Đóng</span>{% endif %}
+      </td>
+      <td>{{ p.donate_date.strftime('%d/%m/%Y') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">Bạn chưa quyên góp sản phẩm nào.</p>
+  {% endif %}
+</div>
+{% endblock %}

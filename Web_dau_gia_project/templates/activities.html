@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Hoạt động của hội · Đấu giá từ thiện{% endblock %}
+{% block content %}
+<div class="card">
+  <h1 class="intro" style="color:var(--primary-d);margin-top:0">📸 Hoạt động của hội</h1>
+  {% if updated %}<p class="muted">Cập nhật lần cuối: {{ updated }}</p>{% endif %}
+
+  {% if content %}
+    <div class="activities-content">{{ content|safe }}</div>
+  {% else %}
+    <p class="muted">Chưa có nội dung. Admin vui lòng đăng nhập và tải lên file Word
+       ở trang Quản lý để cập nhật thông tin hoạt động từ thiện của hội.</p>
+  {% endif %}
+
+  <div class="cta" style="margin-top:30px">
+    <a class="btn" href="{{ url_for('login') }}">Đăng nhập</a>
+    <a class="btn btn-accent" href="{{ url_for('register') }}">Đăng ký mới</a>
+    <a class="btn btn-outline" href="{{ url_for('home') }}">Trang giới thiệu</a>
+  </div>
+</div>
+{% endblock %}

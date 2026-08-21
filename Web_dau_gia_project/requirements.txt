@@ -1,5 +1,9 @@
-Flask>=3.0
-Flask-SQLAlchemy>=3.1
-Flask-Mail>=0.9
-Flask-SocketIO>=5.3
-Werkzeug>=3.0
+ Flask>=3.0                                                                                                                                     
+ Flask-SQLAlchemy>=3.1                                                                                                                          
+ Flask-Mail>=0.9                                                                                                                                
+ Flask-SocketIO>=5.3                                                                                                                            
+ Werkzeug>=3.0                                                                                                                                  
+ python-docx>=1.1                                                                                                                               
+ gunicorn>=21.2                                                                                                                                 
+ gevent>=24.2                                                                                                                                   
+ gevent-websocket>=0.10  
